@@ -1,0 +1,32 @@
+name: GopherShield CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25'
+        check-latest: true
+        cache: true
+
+    - name: Install Dependencies
+      run: go mod tidy
+
+    - name: Run Tests
+      # -race bayrağı thread-safety (mutex) kontrolü için kritiktir
+      run: go test -v -race -coverprofile=coverage.txt ./...
+
+    - name: Build Binary
+      run: go build -v -o gophershield ./cmd/gophershield
