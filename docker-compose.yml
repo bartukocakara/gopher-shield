@@ -1,0 +1,44 @@
+services:
+  gophershield:
+    build: .
+    ports:
+      - "8080:8080" # Entry point for customers
+      - "9090:9090" # Metrics for SREs
+    environment:
+      - UPSTREAM_URL=http://order-service:3000
+    networks:
+      - ecommerce-net
+
+  order-service:
+    image: golang:1.25-alpine
+    working_dir: /app
+    container_name: order-service
+    volumes:
+      - ./mock_order_service.go:/app/main.go
+    command: go run main.go
+    networks:
+      - ecommerce-net
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9091:9090"
+    networks:
+      - ecommerce-net
+  grafana:
+    image: grafana/grafana-oss
+    container_name: gopher-shield-grafana
+    ports:
+      - "3001:3000" # Grafana'ya 3001 portundan ulaşacağız
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin # Varsayılan şifre
+    networks:
+      - ecommerce-net
+    depends_on:
+      - prometheus
+
+networks:
+  ecommerce-net:
+    driver: bridge
